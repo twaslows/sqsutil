@@ -1,0 +1,4 @@
+venv
+.idea
+sqs_messages.jsonl
+.envrc
