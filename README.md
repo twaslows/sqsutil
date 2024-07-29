@@ -5,6 +5,8 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 touch sqs_messages.jsonl
+echo <QUEUE_URL> > .envrc && direnv allow
+# or export QUEUE_URL=<QUEUE_URL>
 ```
 
 Usage:
