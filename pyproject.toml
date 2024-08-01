@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "sqsutil"
+version = "0.1.0"
+description = "Utility for interacting with SQS Queues and Topics"
+authors = ["Tobias Waslowski <tobias.waslowski@otto-payments.de>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+boto3 = "^1.34.151"
+
+[tool.poetry.scripts]
+sqs-util = "main:cli"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

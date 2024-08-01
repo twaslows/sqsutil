@@ -1,4 +1,7 @@
 venv
 .idea
-sqs_messages.jsonl
+out/alerting.jsonl
 .envrc
+
+events
+out

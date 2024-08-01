@@ -1,9 +1,10 @@
-import boto3
-import click
 import datetime
 import json
 import os
 import time
+
+import boto3
+import click
 from click import secho
 
 """
@@ -12,7 +13,7 @@ Script for creating and analyzing SQS messages.
 
 QUEUE_URL = os.environ.get("QUEUE_URL")
 SNS_TOPIC_ARN = os.environ["SNS_TOPIC_ARN"]
-OUT_FILE = "sqs_messages.jsonl"
+OUT_FILE = "out/alerting.jsonl"
 POLLING_FREQUENCY = 5
 
 sqs_client = boto3.client("sqs", region_name="eu-central-1")
@@ -26,11 +27,22 @@ def cli():
 
 @click.command()
 @click.option("--delete", is_flag=True, default=True, help="The URL of the SQS queue")
-@click.option("--full-message", is_flag=True, default=False, help="Store the full received SNS message")
-@click.option("--queue-url", default=QUEUE_URL, help="Queue URL; can be overwritten by environment variable")
+@click.option(
+    "--full-message",
+    is_flag=True,
+    default=False,
+    help="Store the full received SNS message",
+)
+@click.option(
+    "--queue-url",
+    default=QUEUE_URL,
+    help="Queue URL; can be overwritten by environment variable",
+)
 def receive(delete, full_message, queue_url):
     while True:
-        secho(f"{datetime.datetime.now().isoformat()}: Polling for messages on Queue {queue_url}")
+        secho(
+            f"{datetime.datetime.now().isoformat()}: Polling for messages on Queue {queue_url}"
+        )
         messages = sqs_client.receive_message(
             QueueUrl=queue_url, MaxNumberOfMessages=10, VisibilityTimeout=1200
         ).get("Messages", [])
@@ -62,7 +74,9 @@ def receive(delete, full_message, queue_url):
 
 
 @click.command()
-@click.option("--event", required=True, help="Message to publish; reads from a JSON file")
+@click.option(
+    "--event", required=True, help="Message to publish; reads from a JSON file"
+)
 def publish(event):
     with open(event, "r") as f:
         message = json.load(f)

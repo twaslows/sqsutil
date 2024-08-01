@@ -1,0 +1,40 @@
+{
+  "receiver": "sns-business",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "ManualTestingAlert",
+        "orderAuthorizationId": "JT-PAYPAL-d400b3fb-403d-4787-8aec-2a2f30f59738",
+        "service": "testing",
+        "severity": "warning",
+        "type": "business"
+      },
+      "annotations": {
+        "summary": "Nothing's wrong – we're just testing alerting."
+      },
+      "startsAt": "2024-07-25 12:08:05.491 +0000 UTC",
+      "endsAt": "0001-01-01 00:00:00 +0000 UTC",
+      "generatorURL": "/graph?g0.expr=ceil%28sum+by+%28orderAuthorizationId%29+%28invalid_remittance_information_total%7Bapplication%3D%22opa%22%7D%29%29+%3E+0&g0.tab=1",
+      "fingerprint": "025b4d82dd8386f5"
+    }
+  ],
+  "groupLabels": {
+    "alertname": "ManualTestingAlert",
+    "orderAuthorizationId": "JT-PAYPAL-d400b3fb-403d-4787-8aec-2a2f30f59738",
+    "service": "testing",
+    "severity": "warning",
+    "type": "business"
+  },
+  "commonLabels": {
+    "alertname": "ManualTestingAlert",
+    "orderAuthorizationId": "JT-PAYPAL-d400b3fb-403d-4787-8aec-2a2f30f59738",
+    "service": "testing",
+    "severity": "warning",
+    "type": "business"
+  },
+  "commonAnnotations": {
+    "summary": "Nothing's wrong – we're just testing alerting."
+  }
+}
