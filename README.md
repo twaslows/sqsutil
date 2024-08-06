@@ -1,16 +1,17 @@
-Installation:
+# sqsutil
+
+Simple utility to interact with AWS SQS Queues and SNS Topics.
+
+
+## Installation
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-touch alerting.jsonl
-echo <QUEUE_URL> > .envrc && direnv allow
-# or export QUEUE_URL=<QUEUE_URL>
+git clone git@github.com:twaslow/sqsutil.git
+pip install -e sqsutil # global install
 ```
 
-Usage:
+## Usage
 
 ```bash
-python main.py <purge | receive>
+sqsutil --help
 ```

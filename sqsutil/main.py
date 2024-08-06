@@ -4,7 +4,7 @@ import time
 
 from click import secho
 
-from sqs_util.util import BaseClient, click, create_client, debug, info
+from sqsutil.util import BaseClient, click, create_client, debug, info
 
 """
 Script for creating and analyzing SQS messages.
@@ -52,6 +52,7 @@ def receive(
     _debug: bool,
     polling_frequency: int,
 ):
+    """Continuously poll messages from a Queue"""
     sqs_client = create_client("sqs", local)
     while True:
         messages = poll(queue_url, sqs_client)

@@ -6,7 +6,7 @@ authors = ["Tobias Waslowski <tobias.waslowski@otto-payments.de>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    { include = "sqs_util", from = "." }
+    { include = "sqsutil", from = "." }
 ]
 
 [tool.poetry.dependencies]
@@ -15,7 +15,7 @@ boto3 = "^1.34.151"
 click = "^8.1.7"
 
 [tool.poetry.scripts]
-sqsutil = "sqs_util.main:cli"
+sqsutil = "sqsutil.main:cli"
 
 [build-system]
 requires = ["poetry-core"]
