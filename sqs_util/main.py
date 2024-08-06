@@ -74,7 +74,7 @@ def process_message(
     out_file: str,
     queue_url: str,
     sqs_client: BaseClient,
-):
+) -> None:
     body = json.loads(message["Body"])["Message"]
     if not out_file:
         out_file = f"out/{queue_url}_events.jsonl"
@@ -122,8 +122,11 @@ def publish(local: bool, event: str, topic_arn: str, _debug: bool):
     """Publish to a specified topic"""
     sns_client = create_client("sns", local)
     with open(f"{event}", "r") as f:
-        message = json.load(f)
-    sns_client.publish(TopicArn=topic_arn, Message=json.dumps(message))
+        payload = json.load(f)
+        message = payload.get("Message")
+        message_attributes = payload.get("MessageAttributes")
+        debug(f"Message: {message}")
+    sns_client.publish(TopicArn=topic_arn, Message=json.dumps(message), MessageAttributes=message_attributes)
     secho("Message published")
 
 
@@ -134,7 +137,7 @@ def purge(queue_url: str, _debug: bool, local: bool):
     """Purge a queue"""
     sqs_client = create_client("sqs", local)
     sqs_client.purge_queue(QueueUrl=queue_url)
-    secho(f"Queue {QUEUE_URL} purged")
+    secho(f"Queue {queue_url} purged")
 
 
 if __name__ == "__main__":
