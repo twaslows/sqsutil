@@ -1,6 +1,5 @@
 import datetime
 import json
-import os
 import time
 
 from click import secho
@@ -10,10 +9,6 @@ from sqs_util.util import BaseClient, click, create_client, debug, info
 """
 Script for creating and analyzing SQS messages.
 """
-
-QUEUE_URL = os.environ.get("QUEUE_URL")
-SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN")
-POLLING_FREQUENCY = 5
 
 _global_options = [
     click.option('--local', '-l', is_flag=True, default=False, help='Use localstack endpoint'),
@@ -41,14 +36,15 @@ def cli():
     help="Delete polled messages from the Queue",
 )
 @click.option("--out-file", help="Output file", type=click.Path(exists=True))
+@click.option("--polling-frequency", envvar="POLLING_FREQUENCY", help="Polling frequency")
 @global_opts
-def receive(delete: bool, queue_url: str, out_file: str, local: bool, _debug: bool):
+def receive(delete: bool, queue_url: str, out_file: str, local: bool, _debug: bool, polling_frequency: int):
     sqs_client = create_client("sqs", local)
     while True:
         messages = poll(queue_url, sqs_client)
         if not messages:
             info(f"{datetime.datetime.now().isoformat()}: No messages found")
-            time.sleep(POLLING_FREQUENCY)
+            time.sleep(polling_frequency)
             continue
         else:
             secho(f"Found {len(messages)} messages")
@@ -57,8 +53,8 @@ def receive(delete: bool, queue_url: str, out_file: str, local: bool, _debug: bo
                     delete, message, out_file, queue_url, sqs_client
                 )
                 secho("Message deleted")
-        secho(f"Waiting {POLLING_FREQUENCY} seconds")
-        time.sleep(POLLING_FREQUENCY)
+        secho(f"Waiting {polling_frequency} seconds")
+        time.sleep(polling_frequency)
 
 
 def process_message(
