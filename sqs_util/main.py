@@ -11,8 +11,12 @@ Script for creating and analyzing SQS messages.
 """
 
 _global_options = [
-    click.option('--local', '-l', is_flag=True, default=False, help='Use localstack endpoint'),
-    click.option('--debug', '-d', '_debug', is_flag=True, default=False, help='Print debug logs'),
+    click.option(
+        "--local", "-l", is_flag=True, default=False, help="Use localstack endpoint"
+    ),
+    click.option(
+        "--debug", "-d", "_debug", is_flag=True, default=False, help="Print debug logs"
+    ),
 ]
 
 
@@ -36,9 +40,18 @@ def cli():
     help="Delete polled messages from the Queue",
 )
 @click.option("--out-file", help="Output file", type=click.Path(exists=True))
-@click.option("--polling-frequency", envvar="POLLING_FREQUENCY", help="Polling frequency")
+@click.option(
+    "--polling-frequency", envvar="POLLING_FREQUENCY", help="Polling frequency"
+)
 @global_opts
-def receive(delete: bool, queue_url: str, out_file: str, local: bool, _debug: bool, polling_frequency: int):
+def receive(
+    delete: bool,
+    queue_url: str,
+    out_file: str,
+    local: bool,
+    _debug: bool,
+    polling_frequency: int,
+):
     sqs_client = create_client("sqs", local)
     while True:
         messages = poll(queue_url, sqs_client)
@@ -49,20 +62,18 @@ def receive(delete: bool, queue_url: str, out_file: str, local: bool, _debug: bo
         else:
             secho(f"Found {len(messages)} messages")
             for message in messages:
-                process_message(
-                    delete, message, out_file, queue_url, sqs_client
-                )
+                process_message(delete, message, out_file, queue_url, sqs_client)
                 secho("Message deleted")
         secho(f"Waiting {polling_frequency} seconds")
         time.sleep(polling_frequency)
 
 
 def process_message(
-        delete: bool,
-        message: dict,
-        out_file: str,
-        queue_url: str,
-        sqs_client: BaseClient,
+    delete: bool,
+    message: dict,
+    out_file: str,
+    queue_url: str,
+    sqs_client: BaseClient,
 ):
     body = json.loads(message["Body"])["Message"]
     if not out_file:
@@ -103,7 +114,7 @@ def list_queues(local: bool, _debug: bool):
 )
 @click.option(
     "--topic-arn",
-    default=SNS_TOPIC_ARN,
+    envvar="SNS_TOPIC_ARN",
     help="SNS Topic ARN; defaults to the SNS_TOPIC_ARN environment variable",
 )
 @global_opts
