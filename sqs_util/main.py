@@ -3,10 +3,9 @@ import json
 import os
 import time
 
-import boto3
-import click
 from click import secho
-from sqs_util.util import *
+
+from sqs_util.util import BaseClient, click, create_client, debug, info
 
 """
 Script for creating and analyzing SQS messages.
@@ -16,91 +15,120 @@ QUEUE_URL = os.environ.get("QUEUE_URL")
 SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN")
 POLLING_FREQUENCY = 5
 
-sqs_client = boto3.client("sqs", region_name="eu-central-1")
-sns_client = boto3.client("sns", region_name="eu-central-1")
+_global_options = [
+    click.option('--local', '-l', is_flag=True, default=False, help='Use localstack endpoint'),
+    click.option('--debug', '-d', '_debug', is_flag=True, default=False, help='Print debug logs'),
+]
+
+
+def global_opts(func):
+    for option in reversed(_global_options):
+        func = option(func)
+    return func
 
 
 @click.group()
-@click.option("--debug", default=False)
-def cli(debug: bool):
+def cli():
     pass
 
 
-@click.command()
-@click.option("--delete", is_flag=True, default=False, help="Delete polled messages from the Queue")
+@cli.command()
+@click.argument("queue-url")
 @click.option(
-    "--full-message",
+    "--delete",
     is_flag=True,
     default=False,
-    help="Store the full received SNS message instead of just its data block",
+    help="Delete polled messages from the Queue",
 )
-@click.option(
-    "--queue-url",
-    default=QUEUE_URL,
-    help="Queue URL; defaults to the QUEUE_URL environment variable",
-)
-@click.option("--out-file", help="Output file")
-def receive(delete: bool, full_message: bool, queue_url: str, out_file: str):
+@click.option("--out-file", help="Output file", type=click.Path(exists=True))
+@global_opts
+def receive(delete: bool, queue_url: str, out_file: str, local: bool, _debug: bool):
+    sqs_client = create_client("sqs", local)
     while True:
-        debug(
-            f"{datetime.datetime.now().isoformat()}: Polling for messages on Queue {queue_url}"
-        )
-        # Poll for messages
-        messages = sqs_client.receive_message(
-            QueueUrl=queue_url, MaxNumberOfMessages=10, VisibilityTimeout=1200
-        ).get("Messages", [])
+        messages = poll(queue_url, sqs_client)
         if not messages:
             info(f"{datetime.datetime.now().isoformat()}: No messages found")
             time.sleep(POLLING_FREQUENCY)
             continue
-
         else:
             secho(f"Found {len(messages)} messages")
             for message in messages:
-                body = json.loads(message["Body"])["Message"]
-                if not out_file:
-                    out_file = f"out/{queue_url}_events.jsonl"
-                with open(f"out/{out_file}", "a") as f:
-                    if full_message:
-                        f.write(json.dumps(message) + "\n")
-                    else:
-                        f.write(json.dumps(body) + "\n")
-                if delete:
-                    sqs_client.delete_message(
-                        QueueUrl=QUEUE_URL, ReceiptHandle=message["ReceiptHandle"]
-                    )
+                process_message(
+                    delete, message, out_file, queue_url, sqs_client
+                )
                 secho("Message deleted")
         secho(f"Waiting {POLLING_FREQUENCY} seconds")
         time.sleep(POLLING_FREQUENCY)
 
 
-@click.command()
+def process_message(
+        delete: bool,
+        message: dict,
+        out_file: str,
+        queue_url: str,
+        sqs_client: BaseClient,
+):
+    body = json.loads(message["Body"])["Message"]
+    if not out_file:
+        out_file = f"out/{queue_url}_events.jsonl"
+    with open(f"out/{out_file}", "a") as f:
+        f.write(json.dumps(body) + "\n")
+    if delete:
+        sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
+        )
+
+
+def poll(queue_url: str, sqs_client: BaseClient) -> list[dict]:
+    debug(
+        f"{datetime.datetime.now().isoformat()}: Polling for messages on Queue {queue_url}"
+    )
+    return sqs_client.receive_message(
+        QueueUrl=queue_url, MaxNumberOfMessages=10, VisibilityTimeout=1200
+    ).get("Messages", [])
+
+
+@cli.command()
+@global_opts
+def list_queues(local: bool, _debug: bool):
+    """List all queues"""
+    sqs_client = create_client("sqs", local)
+    queues = sqs_client.list_queues()
+    for queue in queues["QueueUrls"]:
+        secho(queue)
+
+
+@cli.command()
 @click.option(
-    "--event", required=True, help="Message to publish; reads from a JSON file"
+    "--event",
+    required=True,
+    help="Message to publish; reads from a JSON file",
+    type=click.Path(exists=True),
 )
 @click.option(
     "--topic-arn",
     default=SNS_TOPIC_ARN,
     help="SNS Topic ARN; defaults to the SNS_TOPIC_ARN environment variable",
 )
-def publish(event, topic_arn):
+@global_opts
+def publish(local: bool, event: str, topic_arn: str, _debug: bool):
     """Publish to a specified topic"""
-    with open(f"events/{event}", "r") as f:
+    sns_client = create_client("sns", local)
+    with open(f"{event}", "r") as f:
         message = json.load(f)
     sns_client.publish(TopicArn=topic_arn, Message=json.dumps(message))
     secho("Message published")
 
 
-@click.command()
-@click.option("--queue-url", default=QUEUE_URL, help="Queue URL; defaults to the QUEUE_URL environment variable")
-def purge():
-    sqs_client.purge_queue(QueueUrl=QUEUE_URL)
+@cli.command()
+@click.argument("queue-url")
+@global_opts
+def purge(queue_url: str, _debug: bool, local: bool):
+    """Purge a queue"""
+    sqs_client = create_client("sqs", local)
+    sqs_client.purge_queue(QueueUrl=queue_url)
     secho(f"Queue {QUEUE_URL} purged")
 
-
-cli.add_command(purge)
-cli.add_command(receive)
-cli.add_command(publish)
 
 if __name__ == "__main__":
     cli()
