@@ -45,14 +45,14 @@ def cli():
 )
 @global_opts
 def receive(
-        delete: bool,
-        queue_url: str,
-        out_file: str,
-        local: bool,
-        _debug: bool,
-        polling_frequency: int,
+    delete: bool,
+    queue_url: str,
+    out_file: str,
+    local: bool,
+    _debug: bool,
+    polling_frequency: int,
 ):
-    """Continuously poll messages from a Queue"""
+    """SQS: Continuously poll messages from a Queue"""
     sqs_client = create_client("sqs", local)
     while True:
         messages = poll(queue_url, sqs_client)
@@ -70,11 +70,11 @@ def receive(
 
 
 def process_message(
-        delete: bool,
-        message: dict,
-        out_file: str,
-        queue_url: str,
-        sqs_client: BaseClient,
+    delete: bool,
+    message: dict,
+    out_file: str,
+    queue_url: str,
+    sqs_client: BaseClient,
 ) -> None:
     body = json.loads(message["Body"])["Message"]
     if not out_file:
@@ -99,11 +99,21 @@ def poll(queue_url: str, sqs_client: BaseClient) -> list[dict]:
 @cli.command()
 @global_opts
 def list_queues(local: bool, _debug: bool):
-    """List all queues"""
+    """SQS: List all queues"""
     sqs_client = create_client("sqs", local)
     queues = sqs_client.list_queues()
     for queue in queues["QueueUrls"]:
         secho(queue)
+
+
+@cli.command()
+@click.argument("queue-url")
+@global_opts
+def purge(queue_url: str, _debug: bool, local: bool):
+    """SQS: Purge a queue"""
+    sqs_client = create_client("sqs", local)
+    sqs_client.purge_queue(QueueUrl=queue_url)
+    secho(f"Queue {queue_url} purged")
 
 
 @cli.command()
@@ -120,34 +130,30 @@ def list_queues(local: bool, _debug: bool):
 )
 @global_opts
 def publish(local: bool, event: str, topic_arn: str, _debug: bool):
-    """Publish to a specified topic"""
+    """SNS: Publish to a specified topic"""
     sns_client = create_client("sns", local)
     with open(f"{event}", "r") as f:
         payload = json.load(f)
         message = payload.get("Message")
         message_attributes = payload.get("MessageAttributes")
         debug(f"Message: {message}")
-    sns_client.publish(TopicArn=topic_arn, Message=json.dumps(message), MessageAttributes=message_attributes)
+    sns_client.publish(
+        TopicArn=topic_arn,
+        Message=json.dumps(message),
+        MessageAttributes=message_attributes,
+    )
     secho("Message published")
-
-
-@cli.command()
-@click.argument("queue-url")
-@global_opts
-def purge(queue_url: str, _debug: bool, local: bool):
-    """Purge a queue"""
-    sqs_client = create_client("sqs", local)
-    sqs_client.purge_queue(QueueUrl=queue_url)
-    secho(f"Queue {queue_url} purged")
 
 
 @cli.command()
 @click.argument("secret-name")
 @global_opts
 def find_secret(secret_name: str, local: bool, _debug: bool):
-    """Find a secret in Secrets Manager"""
+    """Secretsmanager: Find a secret in Secrets Manager"""
     secrets_client = create_client("secretsmanager", local)
-    secrets = secrets_client.list_secrets(Filters=[{"Key": "name", "Values": [secret_name]}])
+    secrets = secrets_client.list_secrets(
+        Filters=[{"Key": "name", "Values": [secret_name]}]
+    )
     for secret in secrets["SecretList"]:
         secho(f"{secret['Name']}", fg="green", nl=False)
         secho(f" ({secret['Description']})")
@@ -157,7 +163,7 @@ def find_secret(secret_name: str, local: bool, _debug: bool):
 @click.argument("secret-name")
 @global_opts
 def get_secret(secret_name: str, local: bool, _debug: bool):
-    """Get a secret in Secrets Manager"""
+    """Secretsmanager: Get a secret in Secrets Manager"""
     secrets_client = create_client("secretsmanager", local)
     secret = secrets_client.get_secret_value(SecretId=secret_name)
     secho(secret["SecretString"])
