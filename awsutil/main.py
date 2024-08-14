@@ -4,7 +4,7 @@ import time
 
 from click import secho
 
-from sqsutil.util import BaseClient, click, create_client, debug, info
+from awsutil.util import BaseClient, click, create_client, debug, info
 
 """
 Script for creating and analyzing SQS messages.

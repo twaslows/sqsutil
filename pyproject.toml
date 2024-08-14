@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "sqsutil"
-version = "0.1.0"
-description = "Utility for interacting with SQS Queues and Topics"
+name = "awsutil"
+version = "0.2.0"
+description = "High-level wrapper around certain AWS services for specific use cases"
 authors = ["Tobias Waslowski <tobias.waslowski@otto-payments.de>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    { include = "sqsutil", from = "." }
+    { include = "awsutil", from = "." }
 ]
 
 [tool.poetry.dependencies]
@@ -15,7 +15,7 @@ boto3 = "^1.34.151"
 click = "^8.1.7"
 
 [tool.poetry.scripts]
-awsutil = "sqsutil.main:cli"
+awsutil = "awsutil.main:cli"
 
 [build-system]
 requires = ["poetry-core"]
